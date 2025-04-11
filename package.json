@@ -1,5 +1,6 @@
 {
   "name": "postgres-starter",
+  "packageManager": "pnpm@9.14.2",
   "repository": "https://github.com/vercel/examples.git",
   "license": "MIT",
   "version": "0.0.0",
