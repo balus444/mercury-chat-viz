@@ -1,9 +1,9 @@
 "use server";
 
 import { Config, configSchema, explanationsSchema, Result } from "@/lib/types";
-import { openai } from "@ai-sdk/openai";
 import { createClient } from "@supabase/supabase-js";
 import { generateObject } from "ai";
+import { deepseek } from "@ai-sdk/deepseek";
 import { z } from "zod";
 
 // Initialize Supabase client
@@ -16,7 +16,7 @@ export const generateQuery = async (input: string) => {
   "use server";
   try {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: deepseek("deepseek-chat"),
       system: `You are a SQL (postgres) and data visualization expert specializing in investment portfolio analysis. Your job is to help generate insightful queries about investment portfolios and client holdings.
 
       IMPORTANT RULES:
@@ -201,7 +201,7 @@ export const explainQuery = async (input: string, sqlQuery: string) => {
   "use server";
   try {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: deepseek("deepseek-chat"),
       schema: z.object({
         explanations: explanationsSchema,
       }),
@@ -320,12 +320,13 @@ export const generateChartConfig = async (
   - Number of variables
   - The story you want to tell
   - User's query intent
+  - Never return null for measurementColumn or lineCategories. Use an empty string or empty array instead.
 
   Choose the most appropriate chart type based on these guidelines, but adapt based on the specific data and query context.`;
 
   try {
     const { object: config } = await generateObject({
-      model: openai("gpt-4o"),
+      model: deepseek("deepseek-chat"),
       system,
       prompt: `Given the following data from a SQL query result, generate the chart config that best visualises the data and answers the users query.
 
@@ -338,7 +339,7 @@ export const generateChartConfig = async (
     });
 
     const colors: Record<string, string> = {};
-    config.yKeys.forEach((key, index) => {
+    config.yKeys.forEach((key: string, index: number) => {
       colors[key] = `hsl(var(--chart-${index + 1}))`;
     });
 
