@@ -42,6 +42,36 @@ const colors = [
   "hsl(var(--chart-8))",
 ];
 
+// Helper function to create the ChartContainer's config object
+function createContainerConfig(
+  chartType: string,
+  data: Result[],
+  xKey: string,
+  yKeys: string[],
+  colorPalette: string[]
+): Record<string, { label: string; color: string }> {
+  if (chartType === "pie") {
+    // For pie charts, the config keys are the unique values from the xKey (categories)
+    return data.reduce((acc, item, index) => {
+      const category = String(item[xKey]);
+      acc[category] = {
+        label: toTitleCase(category),
+        color: colorPalette[index % colorPalette.length],
+      };
+      return acc;
+    }, {} as Record<string, { label: string; color: string }>);
+  } else {
+    // For other chart types, the config keys are the yKeys (series)
+    return yKeys.reduce((acc, yKeyItem, index) => {
+      acc[yKeyItem] = {
+        label: toTitleCase(yKeyItem),
+        color: colorPalette[index % colorPalette.length],
+      };
+      return acc;
+    }, {} as Record<string, { label: string; color: string }>);
+  }
+}
+
 export function DynamicChart({
   chartData,
   chartConfig,
@@ -79,34 +109,25 @@ export function DynamicChart({
     switch (chartConfig.type) {
       case "bar":
         return (
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+          <BarChart accessibilityLayer data={chartData}>
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey={chartConfig.xKey}
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
               tickFormatter={(value) =>
                 value.length > 10 ? value.slice(0, 10) + "…" : value
               }
-            >
-              <Label
-                value={toTitleCase(chartConfig.xKey)}
-                offset={0}
-                position="insideBottom"
-              />
-            </XAxis>
-            <YAxis>
-              <Label
-                value={toTitleCase(chartConfig.yKeys[0])}
-                angle={-90}
-                position="insideLeft"
-              />
-            </YAxis>
-            <ChartTooltip content={<ChartTooltipContent />} />
-            {chartConfig.legend && <Legend />}
+            />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             {chartConfig.yKeys.map((key, index) => (
               <Bar
                 key={key}
                 dataKey={key}
-                fill={colors[index % colors.length]}
+                fill={`var(--color-${key})`}
+                radius={4}
               />
             ))}
           </BarChart>
@@ -123,35 +144,28 @@ export function DynamicChart({
         // console.log(useTransformedData, "useTransformedData");
         // const useTransformedData = false;
         return (
-          <LineChart data={useTransformedData ? data : chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+          <LineChart
+            accessibilityLayer
+            data={useTransformedData ? data : chartData}
+          >
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey={useTransformedData ? chartConfig.xKey : chartConfig.xKey}
-            >
-              <Label
-                value={toTitleCase(
-                  useTransformedData ? xAxisField : chartConfig.xKey
-                )}
-                offset={0}
-                position="insideBottom"
-              />
-            </XAxis>
-            <YAxis>
-              <Label
-                value={toTitleCase(chartConfig.yKeys[0])}
-                angle={-90}
-                position="insideLeft"
-              />
-            </YAxis>
-            <ChartTooltip content={<ChartTooltipContent />} />
-            {chartConfig.legend && <Legend />}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             {useTransformedData
               ? lineFields.map((key, index) => (
                   <Line
                     key={key}
                     type="monotone"
                     dataKey={key}
-                    stroke={colors[index % colors.length]}
+                    stroke={`var(--color-${key})`}
+                    strokeWidth={2}
+                    dot={false}
                   />
                 ))
               : chartConfig.yKeys.map((key, index) => (
@@ -159,26 +173,33 @@ export function DynamicChart({
                     key={key}
                     type="monotone"
                     dataKey={key}
-                    stroke={colors[index % colors.length]}
+                    stroke={`var(--color-${key})`}
+                    strokeWidth={2}
+                    dot={false}
                   />
                 ))}
           </LineChart>
         );
       case "area":
         return (
-          <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={chartConfig.xKey} />
-            <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            {chartConfig.legend && <Legend />}
+          <AreaChart accessibilityLayer data={chartData}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey={chartConfig.xKey}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             {chartConfig.yKeys.map((key, index) => (
               <Area
                 key={key}
                 type="monotone"
                 dataKey={key}
-                fill={colors[index % colors.length]}
-                stroke={colors[index % colors.length]}
+                fill={`var(--color-${key})`}
+                fillOpacity={0.4}
+                stroke={`var(--color-${key})`}
               />
             ))}
           </AreaChart>
@@ -215,13 +236,13 @@ export function DynamicChart({
       <h2 className="text-lg font-bold mb-2">{chartConfig.title}</h2>
       {chartConfig && chartData.length > 0 && (
         <ChartContainer
-          config={chartConfig.yKeys.reduce((acc, key, index) => {
-            acc[key] = {
-              label: key,
-              color: colors[index % colors.length],
-            };
-            return acc;
-          }, {} as Record<string, { label: string; color: string }>)}
+          config={createContainerConfig(
+            chartConfig.type,
+            chartData,
+            chartConfig.xKey,
+            chartConfig.yKeys,
+            colors
+          )}
           className="h-[320px] w-full"
         >
           {renderChart()}

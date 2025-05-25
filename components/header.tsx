@@ -1,3 +1,5 @@
+"use client";
+
 import { Moon, Sun, Sparkles, LineChart } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTheme } from "next-themes";

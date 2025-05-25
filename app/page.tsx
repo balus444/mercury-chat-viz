@@ -8,12 +8,12 @@ import {
   runGenerateSQLQuery,
 } from "./actions";
 import { Config, Result } from "@/lib/types";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Brain, Database, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectInfo } from "@/components/project-info";
 import { Results } from "@/components/results";
 import { SuggestedQueries } from "@/components/suggested-queries";
-import { QueryViewer } from "@/components/query-viewer";
+// import { QueryViewer } from "@/components/query-viewer";
 import { Search } from "@/components/search";
 import { Header } from "@/components/header";
 import { ChatContainer } from "@/components/ui/chat-container";
@@ -66,6 +66,11 @@ export default function Page() {
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  // const [queryExplanations, setQueryExplanations] = useState<
+  //   Array<{ section: string; explanation: string }>
+  // >([]);
+  // const [loadingExplanation, setLoadingExplanation] = useState(false);
+  // const [isQueryExpanded, setIsQueryExpanded] = useState(false);
 
   const handleSubmit = async () => {
     if (!inputValue.trim()) return;
@@ -83,7 +88,7 @@ export default function Page() {
     const loadingMsgId = (Date.now() + 1).toString();
     const loadingMessage: ChatMessage = {
       id: loadingMsgId,
-      content: "Analyzing your request...",
+      content: "",
       role: "assistant",
       isLoading: true,
       loadingStep: 1,
@@ -99,13 +104,12 @@ export default function Page() {
         throw new Error("Failed to generate query");
       }
 
-      // Update loading message to show query
+      // Update loading message to step 2 when generating query
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === loadingMsgId
             ? {
                 ...msg,
-                content: `Generated SQL Query:\n\`\`\`sql\n${query}\n\`\`\`\nFetching results...`,
                 loadingStep: 2,
               }
             : msg
@@ -116,6 +120,18 @@ export default function Page() {
       const queryResults = await runGenerateSQLQuery(query);
       const columns =
         queryResults.length > 0 ? Object.keys(queryResults[0]) : [];
+
+      // Update to step 3 for chart generation
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === loadingMsgId
+            ? {
+                ...msg,
+                loadingStep: 3,
+              }
+            : msg
+        )
+      );
 
       // Generate chart config
       const generation = await generateChartConfig(queryResults, inputValue);
@@ -136,6 +152,7 @@ export default function Page() {
             results: queryResults,
             columns: columns,
             chartConfig,
+            // activeQuery: query, // Storing the active query for the explainer
           },
         ];
       });
@@ -162,6 +179,28 @@ export default function Page() {
     handleSubmit();
   };
 
+  // const handleExplainQuery = async (
+  //   currentQuery: string,
+  //   currentExplanations: Array<{ section: string; explanation: string }>
+  // ) => {
+  //   if (currentExplanations.length > 0) {
+  //     setIsQueryExpanded(!isQueryExpanded);
+  //     return;
+  //   }
+  //   setIsQueryExpanded(true);
+  //   setLoadingExplanation(true);
+  //   try {
+  //     const explanations = await explainQuery(inputValue, currentQuery);
+  //     setQueryExplanations(explanations);
+  //   } catch (error) {
+  //     console.error("Failed to fetch explanations:", error);
+  //     toast.error("Failed to load query explanation.");
+  //     // Optionally set some error state for explanations here
+  //   } finally {
+  //     setLoadingExplanation(false);
+  //   }
+  // };
+
   return (
     <main className="flex h-screen flex-col bg-white">
       <div className="flex-1 overflow-hidden">
@@ -178,9 +217,61 @@ export default function Page() {
                   >
                     <div className="mx-auto max-w-3xl">
                       {message.isLoading ? (
-                        <div className="flex items-center gap-3">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>{message.content}</span>
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                          {/* Proper shadcn spinner */}
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+
+                          {/* Loading steps with icons */}
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <div
+                              className={`flex items-center space-x-1 transition-all duration-300 ${
+                                (message.loadingStep ?? 0) >= 1
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              <Brain className="w-4 h-4" />
+                              <span>Analyzing</span>
+                            </div>
+
+                            <div className="w-2 h-0.5 bg-border"></div>
+
+                            <div
+                              className={`flex items-center space-x-1 transition-all duration-300 ${
+                                (message.loadingStep ?? 0) >= 2
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              <Database className="w-4 h-4" />
+                              <span>Querying</span>
+                            </div>
+
+                            <div className="w-2 h-0.5 bg-border"></div>
+
+                            <div
+                              className={`flex items-center space-x-1 transition-all duration-300 ${
+                                (message.loadingStep ?? 0) >= 3
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                              <span>Visualizing</span>
+                            </div>
+                          </div>
+
+                          {/* Loading text */}
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-foreground">
+                              {(message.loadingStep ?? 0) === 1 &&
+                                "Understanding your request..."}
+                              {(message.loadingStep ?? 0) === 2 &&
+                                "Fetching data from database..."}
+                              {(message.loadingStep ?? 0) === 3 &&
+                                "Creating visualization..."}
+                            </p>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -204,6 +295,22 @@ export default function Page() {
                                 columns={message.columns}
                                 chartConfig={message.chartConfig || null}
                               />
+                              {/* {message.activeQuery && (
+                                <div className="mt-2">
+                                  <QueryViewer
+                                    activeQuery={message.activeQuery}
+                                    explanations={queryExplanations}
+                                    onExplainQuery={() =>
+                                      handleExplainQuery(
+                                        message.activeQuery!,
+                                        queryExplanations
+                                      )
+                                    }
+                                    isExpanded={isQueryExpanded}
+                                    isLoadingExplanation={loadingExplanation}
+                                  />
+                                </div>
+                              )} */}
                             </div>
                           )}
                         </>
