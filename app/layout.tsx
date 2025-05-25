@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "next-themes";
+// import { ThemeProvider } from "next-themes"; // Removed
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,17 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // Retaining suppressHydrationWarning for now as it can be useful for other reasons too.
+    // If issues arise or it's confirmed to be only for next-themes, we can remove it.
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        {/* ThemeProvider removed */}
+        {children}
+        <Toaster />
       </body>
     </html>
   );
