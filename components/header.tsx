@@ -2,10 +2,10 @@
 
 import { Moon, Sun, Sparkles, LineChart } from "lucide-react";
 import { Button } from "./ui/button";
-import { useTheme } from "next-themes";
+// import { useTheme } from "next-themes";
 
 export const Header = ({ handleClear }: { handleClear: () => void }) => {
-  const { theme, setTheme } = useTheme();
+  // const { theme, setTheme } = useTheme();
 
   return (
     <div className="flex items-center justify-between mb-6">
@@ -16,7 +16,7 @@ export const Header = ({ handleClear }: { handleClear: () => void }) => {
         Mercury Genie <Sparkles className="h-6 w-6 text-primary" />
       </h1>
       <div className="flex items-center justify-center space-x-2">
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -27,7 +27,7 @@ export const Header = ({ handleClear }: { handleClear: () => void }) => {
             <Sun className="h-5 w-5" />
           )}
           <span className="sr-only">Toggle theme</span>
-        </Button>
+        </Button> */}
       </div>
     </div>
   );
